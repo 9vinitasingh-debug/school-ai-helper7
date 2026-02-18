@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School AI Helper</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #121212;
+  color: white;
+  transition: 0.3s;
+}
+
+body.light {
+  background: #f4f4f4;
+  color: black;
+}
+
+header {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1f1f1f;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  font-size: 14px;
+}
+
+body.light header { background: white; }
+
+#chat-container {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.message {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(8px);}
+  to {opacity:1; transform:translateY(0);}
+}
+
+.user { background:#2979ff; align-self:flex-end; }
+.bot { background:#2a2a2a; align-self:flex-start; }
+body.light .bot { background:#e0e0e0; }
+
+#input-area {
+  display:flex;
+  padding:8px;
+  background:#1f1f1f;
+}
+
+body.light #input-area { background:white; }
+
+select,input {
+  padding:6px;
+  margin-right:4px;
+  border-radius:6px;
+  border:none;
+  outline:none;
+  background:#2a2a2a;
+  color:white;
+  font-size:14px;
+}
+
+body.light select,
+body.light input {
+  background:#e0e0e0;
+  color:black;
+}
+
+input { flex:1; }
+
+button {
+  padding:6px 10px;
+  border:none;
+  border-radius:6px;
+  background:#2979ff;
+  color:white;
+  font-size:14px;
+}
+
+button:active { transform:scale(0.95); }
+
+.modal {
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-box {
+  background:#1f1f1f;
+  padding:20px;
+  border-radius:10px;
+  text-align:center;
+  width:80%;
+}
+
+body.light .modal-box {
+  background:white;
+  color:black;
+}
+
+.hidden { display:none; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <span id="userLabel">Guest</span>
+  <span id="counter">0/5</span>
+  <div>
+    <span id="themeToggle">🌙</span>
+    <span onclick="clearChat()">🗑️</span>
+  </div>
+</header>
+
+<div id="chat-container"></div>
+
+<div id="input-area">
+  <select id="subject">
+    <option value="Math">Math</option>
+    <option value="Science">Science</option>
+    <option value="SST">SST</option>
+    <option value="English">English</option>
+  </select>
+
+  <input type="text" id="question" placeholder="Ask..." maxlength="200">
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<!-- PRO MODAL -->
+<div id="proModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Upgrade to Pro 🚀</h3>
+    <p>Unlimited messages coming soon.</p>
+    <button onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script>
+
+let messageLimit = 5;
+let messageCount = 0;
+
+const chat = document.getElementById("chat-container");
+const counter = document.getElementById("counter");
+const userLabel = document.getElementById("userLabel");
+
+init();
+
+function init(){
+  let username = localStorage.getItem("username");
+  if(!username){
+    username = prompt("Enter your name:");
+    if(username) localStorage.setItem("username", username);
+  }
+  userLabel.innerText = username || "Guest";
+
+  loadData();
+  updateCounter();
+}
+
+function updateCounter(){
+  counter.innerText = messageCount + "/" + messageLimit;
+}
+
+function saveData(){
+  localStorage.setItem("chatData", chat.innerHTML);
+  localStorage.setItem("messageCount", messageCount);
+}
+
+function loadData(){
+  const savedChat = localStorage.getItem("chatData");
+  const savedCount = localStorage.getItem("messageCount");
+  if(savedChat) chat.innerHTML = savedChat;
+  if(savedCount) messageCount = parseInt(savedCount);
+}
+
+function clearChat(){
+  chat.innerHTML="";
+  messageCount=0;
+  updateCounter();
+  saveData();
+}
+
+document.getElementById("question").addEventListener("keypress",function(e){
+  if(e.key==="Enter") sendMessage();
+});
+
+function sendMessage(){
+
+  if(messageCount>=messageLimit){
+    document.getElementById("proModal").classList.remove("hidden");
+    return;
+  }
+
+  const input=document.getElementById("question");
+  const subject=document.getElementById("subject").value;
+  const text=input.value.trim();
+  if(!text) return;
+
+  messageCount++;
+  updateCounter();
+
+  addMessage(text,"user");
+  addMessage("Typing...","bot");
+
+  setTimeout(()=>{
+    chat.lastChild.innerText=generateResponse(subject);
+    saveData();
+  },600);
+
+  input.value="";
+  saveData();
+}
+
+function addMessage(text,type){
+  const msg=document.createElement("div");
+  msg.className="message "+type;
+  msg.innerText=text;
+  chat.appendChild(msg);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function generateResponse(subject){
+  return subject+" Demo:\nStudy step-by-step and revise properly.";
+}
+
+function closeModal(){
+  document.getElementById("proModal").classList.add("hidden");
+}
+
+document.getElementById("themeToggle").addEventListener("click",function(){
+  document.body.classList.toggle("light");
+  this.innerText=document.body.classList.contains("light")?"☀️":"🌙";
+});
+
+</script>
+
+</body>
+</html>
